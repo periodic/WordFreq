@@ -2,7 +2,6 @@ dist
 *.hi
 *.o
 *.prof
-*.hs
 *.ps
 *.hp
 *.aux
