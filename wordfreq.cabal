@@ -1,0 +1,11 @@
+Name:               WordFreq
+Version:            0.1
+Synopsis:           Word Frequency Analyzer
+Description:        Displays a histogram of word frequencies in a text.
+Author:             Drew Haven
+Maintainer:         Drew Haven <drew.haven@gmail.com>
+Build-depends:      base >= 4, bytestring, text, containers, mtl
+Build-type:         Simple
+
+Executable:         wordfreq
+Main-is:            WordFreq.hs
