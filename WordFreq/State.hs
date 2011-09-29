@@ -24,15 +24,17 @@ import Control.Monad (unless)
 
 import System.Environment (getArgs)
 
+import WordFreq.Printer
+
 -- | Simple type synonymn to be used when we expect a single word of Text.
 type Word = T.Text
 -- | The internal representation of the Word List
 type WordList = Map Word Integer
 
 -- | The internal state of the wordcounter.
-data WordCountState = WordCountState { wordMap     :: WordList
-                                     , maxCount    :: Integer
-                                     , longestWord :: Integer
+data WordCountState = WordCountState { wordMap     :: ! WordList
+                                     , maxCount    :: ! Integer
+                                     , longestWord :: ! Integer
                                      } deriving (Show)
 
 -- | WordCounter monad type alias.
@@ -71,27 +73,17 @@ initialState :: WordCountState
 initialState = WordCountState M.empty 0 0
 
 -- | Print out a pretty table of the word list.
-printWordList :: WordCounter ()
-printWordList = do
+printFrequencies :: WordCounter ()
+printFrequencies = do
     st <- get
     let scale       = maxCount st
         wordWidth   = longestWord st
-    mapM_ (uncurry printWord) . toList . wordMap $ st
-
--- | Print out a line for a single word-count pair.
-printWord :: Word -> Integer -> WordCounter ()
-printWord k v = do
-    scale       <- gets maxCount
-    wordWidth   <- gets longestWord
-    let barWidth = width - wordWidth - 2
-    liftIO $ printf ("%" ++ show wordWidth ++ "s: %s\n") (T.unpack k) (bar v scale barWidth)
-    where
-        bar v scale width = replicate (truncate $ fromIntegral v / fromIntegral scale * fromIntegral width) '#'
-        width = 80
+        screenWidth = 80
+    liftIO . (printWordList screenWidth scale wordWidth) . toList . wordMap $ st
 
 -- | Prints the frequencies of all words in all files as one table.
 printFileWordFrequencies :: [FilePath] -> IO ()
-printFileWordFrequencies files = evalStateT (countAllFiles >> printWordList) initialState
+printFileWordFrequencies files = evalStateT (countAllFiles >> printFrequencies) initialState
     where
         countAllFiles   = mapM_ countFile files
         countFile file  = getWordsFromFile file >>= countWords

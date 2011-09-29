@@ -13,7 +13,13 @@ module Main where
  - responsible for IO.
  -}
 
+import WordFreq.Printer
+
 import System.Environment (getArgs)
 import Data.Map (insertWith, empty, toList)
+import Data.Char (toLower, isPunctuation)
 
-main = getArgs >>= return . head >>= readFile >>= return . foldr (\w m -> insertWith (+) w 1 m) empty . words >>= print . toList
+normalizeWord :: String -> String
+normalizeWord = filter (not . isPunctuation) . map toLower
+
+main = getArgs >>= return . head >>= readFile >>= return . foldr (\w m -> insertWith (+) (normalizeWord w) 1 m) empty . words >>= printWordList 80 20 100 . toList
