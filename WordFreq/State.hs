@@ -43,12 +43,11 @@ registerWord :: Word -> WordCounter ()
 registerWord w = do
     st <- get
     let count   = maybe 1 (+ 1) . M.lookup w . wordMap $ st
-        maxC    = max count (maxCount st)
+        maxC    = {-# SCC "maxCount" #-} max count (maxCount st)
         wlen    = fromIntegral . wordLength $ w
-        maxL    = max wlen (longestWord st)
-        wmap    = insertWith (+) w 1 (wordMap st)
-    put $ WordCountState wmap maxC maxL
-    return ()
+        maxL    = {-# SCC "maxLength" #-} max wlen (longestWord st)
+        wmap    = {-# SCC "updateMap" #-} insertWith (+) w 1 (wordMap st)
+    {-# SCC "updateState" #-} put $ WordCountState wmap maxC maxL
 
 -- | Registers a set of words.
 countWords :: [Word] -> WordCounter ()
