@@ -8,4 +8,4 @@ Build-depends:      base >= 4, bytestring, text, containers, mtl
 Build-type:         Simple
 
 Executable:         wordfreq
-Main-is:            WordFreq.hs
+Main-is:            WordFreq/State.hs

@@ -13,21 +13,17 @@ module Main where
  - responsible for IO.
  -}
 
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as E
-import Data.ByteString.Lazy as BS (ByteString, readFile)
+import qualified Data.Text as T
+
 import Data.Map as M (Map, empty, lookup, insertWith, mapWithKey, toList)
-import Text.Printf (printf)
 
-import Control.Monad.State (StateT, liftIO, evalStateT, get, put, gets)
+import Control.Monad.State (State, execState, get, put, gets)
 import Control.Monad (unless)
-
-import System.Environment (getArgs)
+import Control.Arrow (first)
 
 import WordFreq.Printer
+import WordFreq.Reader.Text
 
--- | Simple type synonymn to be used when we expect a single word of Text.
-type Word = T.Text
 -- | The internal representation of the Word List
 type WordList = Map Word Integer
 
@@ -38,31 +34,21 @@ data WordCountState = WordCountState { wordMap     :: ! WordList
                                      } deriving (Show)
 
 -- | WordCounter monad type alias.
-type WordCounter a = StateT WordCountState IO a
+type WordCounter a = State WordCountState a
 
 {- | Registers a word with the counter.  This takes care of everything from
  - incrementing the count to creating a new key to updating the largest count
  - and updating the longest word. -}
 registerWord :: Word -> WordCounter ()
-registerWord w =
-    let nw = normalizeWord w
-     in unless (T.null nw) $
-        do  st <- get
-            let count   = maybe 1 (+ 1) . M.lookup nw . wordMap $ st
-                maxC    = max count (maxCount st)
-                wlen    = fromIntegral . T.length $ nw
-                maxL    = max wlen (longestWord st)
-                wmap    = insertWith (+) nw 1 (wordMap st)
-            put $ WordCountState wmap maxC maxL
-            return ()
-
--- | Normalizes a word by removing capitalization and punctuation.
-normalizeWord :: Word -> Word
-normalizeWord = T.filter (`notElem` "*,.-!?<>/'\";:][}{)(@#$%^&`~-_=+") . T.toLower
-
--- | Gets the words from a file.
-getWordsFromFile :: FilePath -> WordCounter [Word]
-getWordsFromFile = fmap (T.words . E.decodeUtf8) . liftIO . BS.readFile
+registerWord w = do
+    st <- get
+    let count   = maybe 1 (+ 1) . M.lookup w . wordMap $ st
+        maxC    = max count (maxCount st)
+        wlen    = fromIntegral . wordLength $ w
+        maxL    = max wlen (longestWord st)
+        wmap    = insertWith (+) w 1 (wordMap st)
+    put $ WordCountState wmap maxC maxL
+    return ()
 
 -- | Registers a set of words.
 countWords :: [Word] -> WordCounter ()
@@ -72,29 +58,12 @@ countWords = mapM_ registerWord
 initialState :: WordCountState
 initialState = WordCountState M.empty 0 0
 
--- | Print out a pretty table of the word list.
-printFrequencies :: WordCounter ()
-printFrequencies = do
-    st <- get
-    let scale       = maxCount st
-        wordWidth   = longestWord st
-        screenWidth = 80
-    liftIO . (printWordList screenWidth scale wordWidth) . toList . wordMap $ st
+-- | Get the frequencies of words by running the word counter over a list of words.
+getFrequencies :: [Word] -> WordCountState
+getFrequencies words = execState (countWords words) initialState
 
--- | Prints the frequencies of all words in all files as one table.
-printFileWordFrequencies :: [FilePath] -> IO ()
-printFileWordFrequencies files = evalStateT (countAllFiles >> printFrequencies) initialState
-    where
-        countAllFiles   = mapM_ countFile files
-        countFile file  = getWordsFromFile file >>= countWords
-
--- | Get the list of files we are going to read in.  Currently just assumes all command-line arguments are files to process.
-getFileNames :: IO [FilePath]
-getFileNames = do
-    args <- getArgs
-    case args of
-        files@(file:_) -> return files
-        _              -> error "You must supply at least one file."
-
-
-main = getFileNames >>= printFileWordFrequencies
+-- | The main function.  Reads in words, counts them up, then prints a histogram.
+main = do
+    words                   <- readWords
+    let (WordCountState m c l) = getFrequencies words
+    printWordList 80 c l . map (first toString) . toList $ m
