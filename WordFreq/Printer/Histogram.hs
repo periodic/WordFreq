@@ -1,5 +1,5 @@
-module WordFreq.Printer ( printWordList
-                        ) where
+module WordFreq.Printer.Histogram ( printWordList
+                                   ) where
 {- | This module is responsible for printing words lists.
  -}
 
@@ -27,9 +27,9 @@ printWordList :: Integer -- | Width of the screen
               -> Integer -- | Maximum word length, for lining up the output.
               -> [(String, Integer)]  -- | The words and their values, as returned by functions such as Data.Map.toList.
               -> IO ()
-printWordList screenWidth maxVal maxWordLen words = 
+printWordList screenWidth maxVal maxWordLen words =
     mapM_ guardedPrint words
     where
-        guardedPrint (w, v) = when (v > 0) $ 
+        guardedPrint (w, v) = when (v > 0) $
                               printWord screenWidth maxVal maxWordLen w v
-                              
+

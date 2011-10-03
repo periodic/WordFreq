@@ -21,13 +21,13 @@ import Control.Monad.State (State, execState, get, put, gets)
 import Control.Monad (unless)
 import Control.Arrow (first)
 
-import WordFreq.Printer
+import WordFreq.Printer.Histogram
 import WordFreq.Reader.Text
 
 -- | The internal representation of the Word List
 type WordList = Map Word Integer
 
--- | The internal state of the wordcounter.
+-- | The internal state of the wordcounter.  Fields are strict to avoid the build-up of thunks during our many iterations.
 data WordCountState = WordCountState { wordMap     :: ! WordList
                                      , maxCount    :: ! Integer
                                      , longestWord :: ! Integer
