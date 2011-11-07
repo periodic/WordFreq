@@ -15,9 +15,9 @@ module Main where
 
 import qualified Data.Text as T
 
-import Data.Map as M (Map, empty, lookup, insertWith, mapWithKey, toList)
+import Data.Map as M (Map, empty, lookup, insertWith', mapWithKey, toList)
 
-import Control.Monad.State (State, execState, get, put, gets)
+import Control.Monad.State.Strict (State, execState, get, put, gets)
 import Control.Monad (unless)
 import Control.Arrow (first)
 
@@ -46,7 +46,7 @@ registerWord w = do
         maxC    = {-# SCC "maxCount" #-} max count (maxCount st)
         wlen    = fromIntegral . wordLength $ w
         maxL    = {-# SCC "maxLength" #-} max wlen (longestWord st)
-        wmap    = {-# SCC "updateMap" #-} insertWith (+) w 1 (wordMap st)
+        wmap    = {-# SCC "updateMap" #-} insertWith' (+) w 1 (wordMap st)
     {-# SCC "updateState" #-} put $ WordCountState wmap maxC maxL
 
 -- | Registers a set of words.
